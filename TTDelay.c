@@ -1,7 +1,7 @@
 
 
 
-/**
+/* ******************************************************************************
  * @file      TTDelay.c
  * @authors   Lars Heinrichs
  * @copyright Lars Heinrichs
@@ -14,9 +14,10 @@
  * TTDelay (tiny time delay) is a way to add very simply non-blocking delays between
  * function calls. Once a function starts being executed, it will be executed
  * until completion. During the functions executions, the application may set
- * when it is to be executed again. Whenever the TTDelay mein code is run it 
- * will check wether execution of a function scheduled or not and skip/execute it.
- */
+ * when it is to be executed again. Whenever the TTDelay main code is run it 
+ * will check wether execution of a function is scheduled or not and skip/execute it.
+ * *****************************************************************************/
+
 /*******************************************************************************
 * Includes
 *******************************************************************************/
@@ -36,10 +37,10 @@ typedef struct {
     uint8_t         highest_priority_value;
     uint8_t         highest_priority_index;
     uint8_t         task_scheduled_count;
-    GET_TIMER_TYPE  current_time;
-    GET_TIMER_TYPE  last_run_time;
-    uint32_t        uiCpuTtsysCycleTickCount;
-    uint32_t        uiCpuIdleCycleTickCount;
+    TT_TIMER_TYPE   current_time;
+    TT_TIMER_TYPE   last_run_time;
+    TT_TIMER_TYPE   uiCpuTtsysCycleTickCount;
+    TT_TIMER_TYPE   uiCpuIdleCycleTickCount;
     float           rIdleTimePercentage;
     float           rTtsysTimePercentage;
     TTDelay_task_t  task [ TT_TASK_COUNT_MAX ];
@@ -56,10 +57,10 @@ typedef struct {
 void TTDelay_find_due_tasks(void);
 void TTDelay_adjust_priority(void);
 void TTDelay_run_task(int index);
-void TTDelay_time_measure(uint32_t* puiAddTimeToValue);
+void TTDelay_time_measure(TT_TIMER_TYPE* puiAddTimeToValue);
 void TTDelay_reset_time_running(void);
 void TTDelay_calculate_cpu_usage(void);
-extern uint32_t GET_RST_TICK;
+extern TT_TIMER_TYPE GET_RST_TICK;
 
 /*******************************************************************************
 * Static Variables
@@ -80,7 +81,7 @@ void TTDelay_reset(void) {
 }
 
 /* Create a task for the TTDelay System. */
-int TTDelay_createTask(void (*func ), void* input_param, void* output_param, int priority){
+int TTDelay_create_task(void (*func ), void* input_param, void* output_param, uint8_t priority){
     if (ttSystem.task_count >= TT_TASK_COUNT_MAX)
         return TT_ERROR_TOO_MANY_TASKS;
 
@@ -91,16 +92,16 @@ int TTDelay_createTask(void (*func ), void* input_param, void* output_param, int
     task->uiInitialPriority     = priority;
     task->pvFuncParameterOut    = output_param;
     task->pvFuncParameterIn     = input_param;
-    task->uiTimeNextExecute     = GET_TIMER_FUNC;
+    task->uiTimeNextExecute     = TT_TIMER_FUNC;
     
     ttSystem.task_count++;
     return TT_OK;
 }
 
-/* same as TTDelay_createTask, but takes an additional uiPeriod argument and sets an additional flag */
-int TTDelay_createTaskPeriodic(void (*func ), void* input_param, void* output_param, int priority, int uiPeriod){
+/* same as TTDelay_create_task, but takes an additional uiPeriod argument and sets an additional flag */
+int TTDelay_create_task_periodic(void (*func ), void* input_param, void* output_param, uint8_t priority, TT_TIMER_TYPE uiPeriod){
     int error;
-    error = TTDelay_createTask(func, input_param, output_param, priority);
+    error = TTDelay_create_task(func, input_param, output_param, priority);
     if (error)
         return error;
     ttSystem.task[ttSystem.task_count-1].uiPeriod = uiPeriod;
@@ -111,7 +112,7 @@ int TTDelay_createTaskPeriodic(void (*func ), void* input_param, void* output_pa
 /* this is the core function of the system that will be called in the users
  * main program loop and execute the tasks.
  * - measure time passed since last call (idle time for TTDelay System) 
- * - check if tasks are due (using GET_TIMER_FUNC from TTDelay_config.h)
+ * - check if tasks are due (using TT_TIMER_FUNC from TTDelay_config.h)
  * - if tasks are due: add aging to scheduled tasks that will not be run this time
  * - if tasks are due: run highest priority scheduled (includes time measurement) 
  * - returns TT_OK if all is done and TT_MORE_TASKS_SCHEDULED if more tasks are due */
@@ -119,7 +120,9 @@ int TTDelay_run(void) {
     TTDelay_time_measure(&ttSystem.uiCpuIdleCycleTickCount);
     TTDelay_find_due_tasks();
     if(ttSystem.task_scheduled_count){
+        #if TT_ENABLE_TASK_AGING
         TTDelay_adjust_priority();
+        #endif
         TTDelay_run_task(ttSystem.highest_priority_index);
         if (ttSystem.task_scheduled_count > 1)
             return TT_MORE_TASKS_SCHEDULED;
@@ -134,19 +137,21 @@ int TTDelay_run(void) {
 void TTDelay_from_last(int delay){
     TTDelay_task_t* task;
     task = &ttSystem.task[ttSystem.current_task_index];
-    if (!(task->uiFlags & TT_TASK_EVER_RUN)){
-        task->uiFlags |= TT_TASK_EVER_RUN;
-        if (task->uiTimeNextExecute <= ttSystem.current_time)
-            task->uiTimeNextExecute = ttSystem.current_time + task->uiPeriod;
-    }
+
     if (task->uiTimeNextExecute + delay < task->uiTimeNextExecute){
         task->uiNextExecuteOverflow = 1;
     }
-    task->uiTimeNextExecute = task->uiTimeNextExecute + delay;
+    task->uiTimeNextExecute += delay;
+    if (!(task->uiFlags & TT_TASK_EVER_RUN)){
+        task->uiFlags |= TT_TASK_EVER_RUN;
+        if (task->uiFlags & TT_TASK_IS_PERIODIC )
+            if (task->uiTimeNextExecute < ttSystem.current_time)
+                task->uiTimeNextExecute = ttSystem.current_time + task->uiPeriod;
+    }
 }
 
 /* call this function again in 'delay' timer ticks. This may be used if the next
- * function/task call needs a certain AFTER the current task/function call */
+ * function/task call needs a certain time span AFTER the current task/function call */
 void TTDelay_from_now (int delay){
     TTDelay_task_t* task;
     task = &ttSystem.task[ttSystem.current_task_index];
@@ -176,7 +181,7 @@ int TTDelay_set_next_function(void (*func )){
 * I N T E R N A L   F U N C T I O N S
 *******************************************************************************/
 /* Calls a user function that reads the current timer value AND RESETS the timer */
-void TTDelay_time_measure(uint32_t* puiAddTimeToValue){
+void TTDelay_time_measure(TT_TIMER_TYPE* puiAddTimeToValue){
     int duration = 0;
     GET_RST_TICK(duration);
     *puiAddTimeToValue += duration;
@@ -186,7 +191,7 @@ void TTDelay_time_measure(uint32_t* puiAddTimeToValue){
 /* compare the current time and a tasks next execute time to find out what tasks
  * should be run */
 void TTDelay_find_due_tasks(void) {
-    ttSystem.current_time = GET_TIMER_FUNC;
+    ttSystem.current_time = TT_TIMER_FUNC;
     ttSystem.highest_priority_value = 255;
     ttSystem.highest_priority_index = TT_TASK_COUNT_MAX + 1;
     ttSystem.task_scheduled_count = 0;
@@ -272,8 +277,8 @@ int TTDelay_get_remaining_idle_time(void) {
 
 }
 
-uint32_t TTDelay_get_next_schedule_time(int index){
-    return ttSystem.task[ttSystem.current_task_index].uiTimeNextExecute;
+TT_TIMER_TYPE TTDelay_get_next_schedule_time(int index){
+    return ttSystem.task[index].uiTimeNextExecute;
 }
 
 
@@ -281,11 +286,11 @@ int TTDelay_get_task_count(void) {
     return ttSystem.task_count;
 }
 
-void TTDelay_set_idle_tick_count(uint32_t uiTickCount){
+void TTDelay_set_idle_tick_count(TT_TIMER_TYPE uiTickCount){
     ttSystem.uiCpuIdleCycleTickCount = uiTickCount;
 }
 
-void TTDelay_set_ttsys_tick_count(uint32_t uiTickCount){
+void TTDelay_set_ttsys_tick_count(TT_TIMER_TYPE uiTickCount){
     ttSystem.uiCpuTtsysCycleTickCount = uiTickCount;
 }
 
@@ -333,7 +338,7 @@ int TTDelay_get_task_scheduled_count(void) {
 
 void TTDelay_calculate_cpu_usage(void) {
     TTDelay_task_t* task = (TTDelay_task_t*)ttSystem.task;
-    uint32_t uiTotalTime = ttSystem.uiCpuIdleCycleTickCount + ttSystem.uiCpuTtsysCycleTickCount;
+    TT_TIMER_TYPE uiTotalTime = ttSystem.uiCpuIdleCycleTickCount + ttSystem.uiCpuTtsysCycleTickCount;
     for (int i = 0 ; i < ttSystem.task_count ; i++, task++){
         uiTotalTime += task->timeRunning;
     }

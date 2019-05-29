@@ -23,10 +23,8 @@
 #define TT_TIMER_OVERFLOW      0x04
 #define TT_TASK_ACTIVE         0x08
 
-#define TT_CPU_LOAD_UPDATE_INTERVAL     1000
-
 #ifdef TT_MONITOR_CPU_LOAD
-    #define GET_RST_TICK(x)    x = GET_RST_TICK_FUNC
+    #define GET_RST_TICK(x)    x = TT_READ_RST_TICK_FUNC
 #else
     #define GET_RST_TICK(x)    ;
 #endif
@@ -35,12 +33,12 @@
 * Types and Typedefs
 *******************************************************************************/
 typedef struct TTDelay_task_t {
-    uint32_t        timeRunning;
+    TT_TIMER_TYPE   timeRunning;
     float           rCpuUsage;
-    uint32_t        uiTimeNextExecute;
-    uint32_t        uiTimeLastExecute;
-    uint32_t        uiPeriod; 
-    uint32_t        uiLongestExecuteDuration; 
+    TT_TIMER_TYPE   uiTimeNextExecute;
+    TT_TIMER_TYPE   uiTimeLastExecute;
+    TT_TIMER_TYPE   uiPeriod; 
+    TT_TIMER_TYPE   uiLongestExecuteDuration; 
     uint8_t         uiNextExecuteOverflow;
     uint8_t         uiInitialPriority;
     uint8_t         uiCurrentPriority;
@@ -73,8 +71,8 @@ enum {
 * Function Prototypes
 *******************************************************************************/
 // public functions to be used
-int  TTDelay_createTask(void (*func ), void* input_param, void* output_param, int priority);
-int  TTDelay_createTaskPeriodic(void (*func ), void* input_param, void* output_param, int priority, int uiPeriod);
+int  TTDelay_create_task(void (*func ), void* input_param, void* output_param, uint8_t priority);
+int  TTDelay_create_task_periodic(void (*func ), void* input_param, void* output_param, uint8_t priority, TT_TIMER_TYPE uiPeriod);
 int  TTDelay_run(void);
 void TTDelay_from_last(int delay);
 void TTDelay_from_now (int delay);

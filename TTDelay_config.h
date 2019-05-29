@@ -1,6 +1,7 @@
 /** **************************************************************
  * @file      TTDelay_config.h
  * @authors   Lars Heinrichs
+ * @copyright Lars Heinrichs
  *
  * @brief
  * Configuration file for TTDelay
@@ -22,22 +23,22 @@
  *  TIMER SETUP
  * ****************************************************/
 // provide a function to read your current time/tick value (used for scheduling)
-#define GET_TIMER_FUNC          HAL_GetTick()
+#define TT_TIMER_FUNC          HAL_GetTick()
 // data type of counter register (so we can detect overflow correctly)
-#define GET_TIMER_TYPE          uint32_t
+#define TT_TIMER_TYPE          uint32_t
 
 // tiny scheduler reserves memory for TASK_COUNT_MAX tasks 
-#define TT_TASK_COUNT_MAX          7
+#define TT_TASK_COUNT_MAX           7
 
-// to make sure low priority tasks dont starve, increase\
-    their priority every PRIORITY_INC_ROUNDS rounds ("aging")
-#define TT_PRIORITY_INC_ROUNDS     10
+// to make sure low priority tasks dont starve, increase their priorioty whenever \
+    they have been scheduled but not run
+#define TT_ENABLE_TASK_AGING        1
 
 // maximum allowed priority increase through aging (default: 0xFF)
-#define TT_PRIORITY_MAX_CHANGE     0xFF
+#define TT_PRIORITY_MAX_CHANGE      0xFF
 
 // lowest allowed priority that can be reached by aging (>= 0)
-#define TT_PRIORITY_THRESHOLD      15
+#define TT_PRIORITY_THRESHOLD       15
 
 
 // TTDelay can monitor the CPU load caused by different tasks. uncomment this to enable
@@ -46,7 +47,8 @@
 // this function is called at the start and end of each task function call.
 // make sure the function resets the timer (counter register) and returns 
 // the counter register value (from before the reset)
-#define GET_RST_TICK_FUNC   read_and_reset_counter_timer10()
+#define TT_READ_RST_TICK_FUNC           read_and_reset_counter_timer10()
+#define TT_CPU_LOAD_UPDATE_INTERVAL     1000
 
 
 

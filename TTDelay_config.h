@@ -10,20 +10,13 @@
 #ifndef _TTDELAY_CFG_H
 #define _TTDELAY_CFG_H
 
-#include "timer.h"
-
-#ifdef CEEDLING_TEST
-#include "stm32_halfunc.h"
-#else
-#include "stm32f4xx.h"
-#include "stm32f4xx_hal.h"
-#endif
+#include "test_timers.h"
 
 /* *****************************************************
  *  TIMER SETUP
  * ****************************************************/
 // provide a function to read your current time/tick value (used for scheduling)
-#define TT_TIMER_FUNC          HAL_GetTick()
+#define TT_TIMER_FUNC          GetSysTick()
 // data type of counter register (so we can detect overflow correctly)
 #define TT_TIMER_TYPE          uint32_t
 
@@ -47,7 +40,7 @@
 // this function is called at the start and end of each task function call.
 // make sure the function resets the timer (counter register) and returns 
 // the counter register value (from before the reset)
-#define TT_READ_RST_TICK_FUNC           read_and_reset_counter_timer10()
+#define TT_READ_RST_TICK_FUNC           ReadResetCpuLoadTick()
 #define TT_CPU_LOAD_UPDATE_INTERVAL     1000
 
 

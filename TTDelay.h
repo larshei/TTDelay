@@ -1,7 +1,6 @@
 /**
  * @file      TTDelay.h
  * @authors   Lars Heinrichs
- * @copyright DSP Systeme GmbH, Düsseldorf
  *
  * @brief [description]
  */

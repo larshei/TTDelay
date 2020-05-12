@@ -1,7 +1,7 @@
 /** **************************************************************
  * @file      TTDelay_config.h
  * @authors   Lars Heinrichs
- * @copyright Lars Heinrichs
+ * @copyright 2019, MIT License, Lars Heinrichs
  *
  * @brief
  * Configuration file for TTDelay

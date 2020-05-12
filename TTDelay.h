@@ -1,6 +1,7 @@
 /**
  * @file      TTDelay.h
  * @authors   Lars Heinrichs
+ * @copyright 2019, MIT License, Lars Heinrichs
  *
  * @brief [description]
  */

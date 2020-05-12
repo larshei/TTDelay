@@ -4,7 +4,7 @@
 /* ******************************************************************************
  * @file      TTDelay.c
  * @authors   Lars Heinrichs
- * @copyright Lars Heinrichs
+ * @copyright 2019, MIT License, Lars Heinrichs
  *
  * @brief 
  * routines to check if a function is meant to run or to wait. it is more of

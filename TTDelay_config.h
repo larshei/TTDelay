@@ -10,7 +10,7 @@
 #ifndef _TTDELAY_CFG_H
 #define _TTDELAY_CFG_H
 
-#include "test_timers.h"
+#include "timers.h"
 
 /* *****************************************************
  *  TIMER SETUP

@@ -1,5 +1,6 @@
 
-Lars Heinrichs, 2019
+![Unit
+Tests](https://github.com/larshei/TTDelay/workflows/Ruby/badge.svg)
 
 ---
 # TTDelay Readme

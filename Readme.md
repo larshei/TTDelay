@@ -1,6 +1,6 @@
 
 ![Unit
-Tests](https://github.com/larshei/TTDelay/workflows/Ruby/badge.svg)
+Tests](https://github.com/larshei/TTDelay/workflows/Unit%20Tests/badge.svg)
 
 ---
 # TTDelay Readme
